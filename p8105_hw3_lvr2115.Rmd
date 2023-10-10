@@ -1,0 +1,43 @@
+---
+title: "p8105_hw3_lvr2115"
+author: "Laura Robles-Torres"
+date: "2023-10-10"
+output: github_document
+---
+```{r}
+library(p8105.datasets)
+data("instacart")
+library(tidyverse)
+library(dplyr)
+```
+
+# Problem 1
+
+The dataset is `r nrow(instacart)` rows and `r ncol(instacart)` columns. The 15 variables are `r ls(instacart)`. 
+
+How many aisles are there, and which aisles are the most items ordered from?
+
+
+```{r}
+instacart |> 
+  group_by (aisle_id) |>
+  summarize(n_obs=n()) |>
+    arrange(desc(n_obs))
+```
+
+There are 134 aisles and the aisles from which the most items are ordered from are 83, 24, and 123. 
+
+Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+
+```{r}
+instacart |>
+  group_by(aisle_id) |>
+  summarize(n_obs = n()) |>
+  ggplot(aes(x = aisle_id, y = n_obs)) + 
+    geom_point() + geom_line() + 
+    theme(legend.position = "bottom")
+```
+
+Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+
+Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
