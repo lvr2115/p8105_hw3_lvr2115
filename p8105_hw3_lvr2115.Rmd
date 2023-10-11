@@ -4,40 +4,74 @@ author: "Laura Robles-Torres"
 date: "2023-10-10"
 output: github_document
 ---
-```{r}
+```{r message=FALSE}
 library(p8105.datasets)
 data("instacart")
 library(tidyverse)
-library(dplyr)
+```
+
+
+```{r }
+instacart = 
+  instacart |> 
+  as_tibble()
 ```
 
 # Problem 1
 
-The dataset is `r nrow(instacart)` rows and `r ncol(instacart)` columns. The 15 variables are `r ls(instacart)`. 
+The dataset is `r nrow(instacart)` rows and `r ncol(instacart)` columns. The 15 variables are `r ls(instacart)`. Each row in this dataset represents an object that was ordered from Instacart. There are variables to identify the order itself, including user ID ('user_id'), the order in which items were added to the cart ('add_to_cart_order'), and the order ID ('order_id'). There are variables to describe the items ordered per say, such as department ('department' and 'department_id'), the name of the product ('product_name'), and the aisle in which the product is found ('aisle' and 'aisle_id'), and whether or not the item has been ordered by this user previously ('reordered').  In total, there are `r instacart |> select(product_id) |> distinct() |> count()` products found in `r instacart |> select(user_id, order_id) |> distinct() |> count()` orders from `r instacart |> select(user_id) |> distinct() |> count()` distinct users.
 
 How many aisles are there, and which aisles are the most items ordered from?
 
-
 ```{r}
 instacart |> 
-  group_by (aisle_id) |>
+  group_by (aisle) |>
   summarize(n_obs=n()) |>
     arrange(desc(n_obs))
 ```
 
-There are 134 aisles and the aisles from which the most items are ordered from are 83, 24, and 123. 
+There are 134 aisles and the aisles from which the most items are ordered from are fresh vegetables and fresh fruits.  
 
-Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+This plot shows the number of items ordered in each aisle, only including aisles with more than 10000 items ordered, shown in ascending order. 
 
-```{r}
+```{r message=FALSE}
 instacart |>
-  group_by(aisle_id) |>
+  group_by(aisle) |>
   summarize(n_obs = n()) |>
-  ggplot(aes(x = aisle_id, y = n_obs)) + 
+  filter(n_obs > 10000) |> 
+      mutate(aisle = fct_reorder(aisle, n_obs)) |> 
+  ggplot(aes(x = aisle, y = n_obs)) + 
     geom_point() + geom_line() + 
-    theme(legend.position = "bottom")
+    labs(title = "Number of items ordered in each aisle") +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
-Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+This table shows the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”, including the number of times each item is ordered.
 
-Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+```{r message=FALSE}
+instacart |>
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) |>
+  group_by(aisle) |>
+  count(product_name) |>
+  mutate(rank = min_rank(desc(n))) |> 
+  filter(rank <=3) |> 
+  arrange(desc(n)) |>
+  knitr::kable()
+```
+
+
+This table shows the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week (0-6). 
+
+```{r message=FALSE}
+instacart |>
+filter(product_name%in% c("Pink Lady Apples", "Coffee Ice Cream")) |>
+group_by(product_name, order_dow) |>
+summarize (
+  mean_hod=mean(order_hour_of_day, na.rm=TRUE)
+) |>
+pivot_wider(
+    names_from = order_dow, 
+    values_from = mean_hod) |>
+  knitr::kable(digits = 1)
+```
+
