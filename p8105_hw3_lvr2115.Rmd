@@ -89,22 +89,30 @@ brfss_smart2010_overallhealth = filter(brfss_smart2010_clean, topic=="Overall He
   mutate(recode_factor(response, "Poor" = "1", "Fair" = "2", "Good" = "3", "Very Good" = "4", "Very good" = "4", "Excellent" = "5"))
 ```
 
-In 2002, these states were observed at 7 or more locations. #HELP
+In 2002, CT, FL, MA, NC, NJ, PA were observed at 7 or more locations. 
+In 2010, CA, CO, FL, MA, MD, NC, NE, NJ, NY, OH, PA, SC, TX, WA were observed at 7 or more locations. 
 
-In 2010, these states were observed at 7 or more locations. #HELP 
+```{r}
+brfss_smart2010_clean |> 
+  filter(year %in% c(2002, 2010)) |> 
+  group_by(locationabbr, year) |> 
+  summarize(locationdesc = n_distinct(locationdesc)) |> 
+  filter(locationdesc >= 7) |>
+  arrange(year)
+```
 
 Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help). #HELP
 
 ```{r}
 brfss_excellent = filter(brfss_smart2010_overallhealth, response == "Excellent")
 brfss_excellent |>
-  group_by(locationabbr) |>
+  group_by(locationabbr, year) |>
   summarize(
     avg_data_value = mean(data_value)
   ) |>
-ggplot(aes(x = avg_data_value, y = locationabbr, color = locationabbr)) + 
+ggplot(aes(x = year, y = avg_data_value, color = locationabbr)) + 
     geom_point() + geom_line() +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+    theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State. #HELP 
@@ -148,18 +156,19 @@ merged_nhanes =
 merged_nhanes |>
   group_by(sex,education) |>
   janitor::tabyl(sex, education) |>
-  knitr::kable(digits=1) |>
-  ggplot(merged_nhanes, aes(x = sex, y = education)) + 
-  geom_boxplot()
+  knitr::kable(digits=1)
+
+merged_nhanes |>
+ggplot(aes(x = sex) +
+  geom_histogram(binwidth = 2)
 ```
 
-Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant. 
-Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. 
+Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant.  Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. 
 
 ```{r}
 merged_nhanes |>
   group_by(seqn) |>
-  summarize(total_activity=sum(min1:min1440))
+  summarize(total_activity=sum(min1:min1440)) 
 ```
 
 Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences.
