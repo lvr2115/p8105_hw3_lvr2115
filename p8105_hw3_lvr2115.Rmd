@@ -148,7 +148,9 @@ merged_nhanes =
 merged_nhanes |>
   group_by(sex,education) |>
   janitor::tabyl(sex, education) |>
-  knitr::kable(digits=1)
+  knitr::kable(digits=1) |>
+  ggplot(merged_nhanes, aes(x = sex, y = education)) + 
+  geom_boxplot()
 ```
 
 Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant. 
