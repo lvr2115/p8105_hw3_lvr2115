@@ -8,6 +8,7 @@ output: github_document
 library(p8105.datasets)
 data("instacart")
 library(tidyverse)
+library(dplyr)
 ```
 
 
@@ -75,3 +76,15 @@ pivot_wider(
   knitr::kable(digits = 1)
 ```
 
+# Problem 2
+```{r loading dataset}
+library(p8105.datasets)
+data("brfss_smart2010")
+```
+
+## Data cleaning 
+```{r data cleaning}
+brfss_smart2010_clean = janitor::clean_names(brfss_smart2010)
+brfss_smart2010_overallhealth = filter(brfss_smart2010_clean, topic=="Overall Health" | response=="Excellent:Poor") |>
+  mutate(recode_factor(response, "Poor" = "1", "Fair" = "2", "Good" = "3", "Very Good" = "4", "Very good" = "4", "Excellent" = "5"))
+```
