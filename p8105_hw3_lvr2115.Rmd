@@ -83,7 +83,10 @@ data("brfss_smart2010")
 
 ## Data cleaning 
 ```{r data cleaning}
-brfss_smart2010_clean = janitor::clean_names(brfss_smart2010)
+brfss_smart2010_clean = 
+  janitor::clean_names(brfss_smart2010) |>
+  rename(state = locationabbr)
+
 brfss_smart2010_overallhealth = filter(brfss_smart2010_clean, topic=="Overall Health" | response=="Excellent:Poor") |>
   mutate(recode_factor(response, "Poor" = "1", "Fair" = "2", "Good" = "3", "Very Good" = "4", "Very good" = "4", "Excellent" = "5"))
 ```
@@ -93,23 +96,34 @@ In 2010, CA, CO, FL, MA, MD, NC, NE, NJ, NY, OH, PA, SC, TX, WA were observed at
 
 ```{r}
 brfss_smart2010_clean |> 
-  filter(year %in% c(2002, 2010)) |> 
-  group_by(locationabbr, year) |> 
-  summarize(locationdesc = n_distinct(locationdesc)) |> 
-  filter(locationdesc >= 7) |>
-  arrange(year)
+  filter(year %in% c(2002)) |> 
+  distinct(state,locationdesc) |>
+  count(state) |>
+  filter(n>=7) |>
+  arrange(n) |>
+  knitr::kable()
+
+brfss_smart2010_clean |>
+  filter(year %in% 2010) |>
+  distinct(state, locationdesc) |>
+  count(state) |> 
+  filter(n >= 7) |>
+  arrange(n) |>
+  knitr::kable()
 ```
 
-Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help). #HELP
+This dataset is limited to 'Excellent' responses, and contains: year, state, and a variable that averages the data_value across locations within a state named "avg_data_value". This plot shows the average value over time within a state. 
+####HELP
 
 ```{r}
-brfss_excellent = filter(brfss_smart2010_overallhealth, response == "Excellent")
+brfss_excellent = filter(brfss_smart2010_overallhealth, response == "Excellent") 
+
 brfss_excellent |>
-  group_by(locationabbr, year) |>
+  group_by(state, year) |>
   summarize(
     avg_data_value = mean(data_value)
   ) |>
-ggplot(aes(x = year, y = avg_data_value, color = locationabbr)) + 
+ggplot(aes(x = year, y = avg_data_value, color = state)) + 
     geom_point() + geom_line() +
     theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
@@ -118,28 +132,38 @@ ggplot(aes(x = year, y = avg_data_value, color = locationabbr)) +
 library(patchwork)
 ```
 
-Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State. #HELP 
+Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State. 
+####HELP 
 
 ```{r}
 ny_response = 
   brfss_smart2010_overallhealth |> 
-  filter(locationabbr == "NY", year %in% c(2006, 2010)) |>
-  ggplot(aes(x = response, y = data_value, color=locationabbr) + 
-           geom_boxplot()
-  )
+  filter(state == "NY", year %in% c(2006, 2010)) |>
+  select(state, year, data_value, locationdesc)
+
+ggplot(ny_response, aes(x = locationdesc, y = data_value) + geom_boxplot()
 ```
 
 # Problem 3 
 
 ## Uploading and cleaning datasets
-```{r message=FALSE, warning=FALSE}
+```{r cleaning accelerometer df, message=FALSE, warning=FALSE}
 accelerometer = 
   read_csv("./nhanes_accel.csv") |>
   janitor::clean_names(case="snake") |>
-  drop_na() 
+  drop_na() |>
+  mutate(
+    seqn = as.factor(seqn)
+  ) |>
+  pivot_longer(
+    min1:min1440,
+    names_prefix = "min",
+    names_to = "min",
+    values_to= "physical_act"
+  )
 ```
 
-```{r message=FALSE, warning=FALSE}
+```{r cleaning demographic df, message=FALSE, warning=FALSE}
 demographic = 
   read_csv("./nhanes_covar.csv",  skip = 4) |> 
   janitor::clean_names(case="snake") |>
@@ -158,12 +182,13 @@ demographic =
         2 ~ "HS",
         3 ~ "more than HS"), 
     sex = as.factor(sex),
-    education = as.factor(education)
+    education = as.factor(education),
+    seqn = as.factor(seqn)
   )
 ```
 
 ## Merging datasets
-```{r}
+```{r merged df}
 merged_nhanes = 
   left_join(demographic, accelerometer, by = c("seqn")) |>
   drop_na()
@@ -187,12 +212,13 @@ ggplot(aes(x = sex, y=age)) +
   )
 ```
 
-Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant.  Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. 
+Aggregate across minutes to create a total activity variable for each participant.  Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. 
 
 ```{r}
 activities_df = merged_nhanes |>
-  group_by(seqn, age, sex, education) |>
-  summarize(total_activity=sum(min1:min1440, na.rm=TRUE)) 
+  group_by(seqn) |>
+  mutate(
+    total_activity=sum(physical_act))
 
 activities_df |>
   ggplot(aes(x=age, y = total_activity, color=sex)) +
@@ -202,8 +228,7 @@ activities_df |>
   labs(
       x= "age",
       y="total activity",
-      title= "total activity & age by education level"
-  )
+      title= "total activity & age by education level")
 ```
 
 Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences.
@@ -218,10 +243,11 @@ inspect_act=merged_nhanes |>
   mutate(minute=as.numeric(minute))
 ```
 
+###HELP 
 ```{r inspection data visualization}
 inspect_act |>
   ggplot(aes(x=minute, y=activity, color=sex))+
-    geom_line() + 
+    geom_line(aes(group=seqn), alpha=0.3) + 
     geom_smooth() +
     facet_grid(.~education)+
     labs(
