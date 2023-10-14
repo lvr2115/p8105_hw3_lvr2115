@@ -169,16 +169,22 @@ merged_nhanes =
   drop_na()
 ```
 
-## Table for the number of men and women in each education category
-```{r}
+## Table and visualization for the number of men and women in each education category
+```{r age distributions for women and men in each education category}
 merged_nhanes |>
   group_by(sex,education) |>
   janitor::tabyl(sex, education) |>
   knitr::kable(digits=1)
 
 merged_nhanes |>
-ggplot(aes(x = sex) +
-  geom_histogram(binwidth = 2)
+ggplot(aes(x = sex, y=age)) +
+  geom_boxplot()+
+  facet_grid(. ~ education)+
+  labs(
+      x= "sex",
+      y="age",
+      title= "age distribution of women and men in each education category"
+  )
 ```
 
 Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant.  Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. 
@@ -190,8 +196,19 @@ activities_df = merged_nhanes |>
 
 activities_df |>
   ggplot(aes(x=age, y = total_activity, color=sex)) +
-  geom_point()
+  geom_point()+
+  geom_smooth()+
+  facet_grid(.~education) +
+  labs(
+      x= "age",
+      y="total activity",
+      title= "total activity & age by education level"
+  )
 ```
 
 Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences.
+
+```{r}
+
+```
 
