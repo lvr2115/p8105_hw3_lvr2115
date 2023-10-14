@@ -134,6 +134,7 @@ library(patchwork)
 
 Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State. 
 ####HELP 
+#- Should I be pivoting? The values don't make sense to me. 
 
 ```{r}
 ny_response = 
@@ -141,7 +142,13 @@ ny_response =
   filter(state == "NY", year %in% c(2006, 2010)) |>
   select(state, year, data_value, locationdesc)
 
-ggplot(ny_response, aes(x = locationdesc, y = data_value) + geom_boxplot()
+ggplot(ny_response, aes(x = locationdesc, y = data_value)) + geom_boxplot() +
+   theme(axis.text.x = element_text(angle = 60, hjust = 1))+
+   facet_grid(.~year) + 
+  labs(
+      x= "NY Counties",
+      y="Data value for Responses to Overall Health",
+      title= "Distribution of data value among NY State locations in 2006 and 2010")
 ```
 
 # Problem 3 
@@ -249,7 +256,7 @@ inspect_act |>
   ggplot(aes(x=minute, y=activity, color=sex))+
     geom_line(aes(group=seqn), alpha=0.3) + 
     geom_smooth() +
-    facet_grid(.~education)+
+    facet_grid(.~education) +
     labs(
       x = "time",
       y = "activity",
