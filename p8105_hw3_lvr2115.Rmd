@@ -208,7 +208,27 @@ activities_df |>
 
 Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences.
 
-```{r}
+```{r inspection data pivoting}
+inspect_act=merged_nhanes |>
+  pivot_longer(
+    cols = starts_with ("min"),
+    names_to = "minute",
+    names_prefix="min",
+    values_to="activity") |>
+  mutate(minute=as.numeric(minute))
+```
 
+```{r inspection data visualization}
+inspect_act |>
+  ggplot(aes(x=minute, y=activity, color=sex))+
+    geom_line() + 
+    geom_smooth() +
+    facet_grid(.~education)+
+    labs(
+      x = "time",
+      y = "activity",
+      title = "24-hour activity time courses by education level and sex",
+      color="sex"
+    )
 ```
 
