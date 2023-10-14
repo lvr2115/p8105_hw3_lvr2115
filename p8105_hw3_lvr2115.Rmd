@@ -11,7 +11,6 @@ library(tidyverse)
 library(dplyr)
 ```
 
-
 ```{r }
 instacart = 
   instacart |> 
@@ -115,7 +114,20 @@ ggplot(aes(x = year, y = avg_data_value, color = locationabbr)) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
+```{r uploading patchwork package for panel plots}
+library(patchwork)
+```
+
 Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State. #HELP 
+
+```{r}
+ny_response = 
+  brfss_smart2010_overallhealth |> 
+  filter(locationabbr == "NY", year %in% c(2006, 2010)) |>
+  ggplot(aes(x = response, y = data_value, color=locationabbr) + 
+           geom_boxplot()
+  )
+```
 
 # Problem 3 
 
@@ -139,6 +151,12 @@ demographic =
         sex, 
         1 ~ "male", 
         2 ~ "female"), 
+    education = 
+      case_match(
+        education, 
+        1 ~ "less than HS", 
+        2 ~ "HS",
+        3 ~ "more than HS"), 
     sex = as.factor(sex),
     education = as.factor(education)
   )
@@ -147,7 +165,7 @@ demographic =
 ## Merging datasets
 ```{r}
 merged_nhanes = 
-  full_join(demographic, accelerometer, by = c("seqn")) |>
+  left_join(demographic, accelerometer, by = c("seqn")) |>
   drop_na()
 ```
 
@@ -166,9 +184,13 @@ ggplot(aes(x = sex) +
 Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant.  Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. 
 
 ```{r}
-merged_nhanes |>
-  group_by(seqn) |>
-  summarize(total_activity=sum(min1:min1440)) 
+activities_df = merged_nhanes |>
+  group_by(seqn, age, sex, education) |>
+  summarize(total_activity=sum(min1:min1440, na.rm=TRUE)) 
+
+activities_df |>
+  ggplot(aes(x=age, y = total_activity, color=sex)) +
+  geom_point()
 ```
 
 Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences.
