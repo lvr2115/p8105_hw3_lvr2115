@@ -88,7 +88,8 @@ brfss_smart2010_clean =
   rename(state = locationabbr)
 
 brfss_smart2010_overallhealth = filter(brfss_smart2010_clean, topic=="Overall Health" | response=="Excellent:Poor") |>
-  mutate(recode_factor(response, "Poor" = "1", "Fair" = "2", "Good" = "3", "Very Good" = "4", "Very good" = "4", "Excellent" = "5"))
+   mutate(response = factor(response, levels = c("Poor", "Fair", "Good", "Very good", 
+                                                "Excellent"), ordered = TRUE)) 
 ```
 
 In 2002, CT, FL, MA, NC, NJ, PA were observed at 7 or more locations. 
@@ -121,28 +122,24 @@ brfss_excellent = filter(brfss_smart2010_overallhealth, response == "Excellent")
 brfss_excellent |>
   group_by(state, year) |>
   summarize(
-    avg_data_value = mean(data_value)
-  ) |>
-ggplot(aes(x = year, y = avg_data_value, color = state)) + 
-    geom_point() + geom_line() +
+    avg_data_value = mean(data_value,  na.rm = TRUE)) |>
+        select(state, year, avg_data_value) |>
+ggplot(aes(x = year, y = avg_data_value, group=state, color = state)) + 
+    geom_point() + geom_line(alpha =0.6) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
-```{r uploading patchwork package for panel plots}
-library(patchwork)
-```
+This plot shows the average of data_value over time within each state. The average data value in 2002 across all states was `r filter(brfss_excellent, year == 2002) |> pull(avg_data_value) |> mean() |> round(1)`. In 2006 the average data value was `r filter(brfss_excellent, year == 2006) |> pull(avg_data_value) |> mean() |> round(1)`. In 2010 the average data value was `r filter(brfss_excellent, year == 2010) |> pull(avg_data_value) |> mean() |> round(1)`.
 
-Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State. 
-####HELP 
-#- Should I be pivoting? The values don't make sense to me. 
+This is a two-panel plot showing, for the years 2006, and 2010, the distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State. 
 
 ```{r}
 ny_response = 
   brfss_smart2010_overallhealth |> 
   filter(state == "NY", year %in% c(2006, 2010)) |>
-  select(state, year, data_value, locationdesc)
+  select(state, year, response, data_value)
 
-ggplot(ny_response, aes(x = locationdesc, y = data_value)) + geom_boxplot() +
+ggplot(ny_response, aes(x = response, y = data_value, fill=response)) + geom_boxplot() +
    theme(axis.text.x = element_text(angle = 60, hjust = 1))+
    facet_grid(.~year) + 
   labs(
@@ -186,7 +183,7 @@ demographic =
       case_match(
         education, 
         1 ~ "less than HS", 
-        2 ~ "HS",
+        2 ~ "HS or HS equivalent",
         3 ~ "more than HS"), 
     sex = as.factor(sex),
     education = as.factor(education),
@@ -200,6 +197,10 @@ merged_nhanes =
   left_join(demographic, accelerometer, by = c("seqn")) |>
   drop_na()
 ```
+
+
+There are more men in this data set than women. Among both women and men, about half of those have more than a HS education and the remaining half is split between less than HS and HS/HS equivalent educations. 
+
 
 ## Table and visualization for the number of men and women in each education category
 ```{r age distributions for women and men in each education category}
