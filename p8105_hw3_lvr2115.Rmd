@@ -114,7 +114,6 @@ brfss_smart2010_clean |>
 ```
 
 This dataset is limited to 'Excellent' responses, and contains: year, state, and a variable that averages the data_value across locations within a state named "avg_data_value". This plot shows the average value over time within a state. 
-####HELP
 
 ```{r}
 brfss_excellent = filter(brfss_smart2010_overallhealth, response == "Excellent") 
@@ -143,10 +142,13 @@ ggplot(ny_response, aes(x = response, y = data_value, fill=response)) + geom_box
    theme(axis.text.x = element_text(angle = 60, hjust = 1))+
    facet_grid(.~year) + 
   labs(
-      x= "NY Counties",
+      x= "Response",
       y="Data value for Responses to Overall Health",
       title= "Distribution of data value among NY State locations in 2006 and 2010")
 ```
+
+In both years, the highest average data value among all 5 response groups is highest for those who responded "Very Good". Additionally, for both years as well, the average data value is highest to lowest in this order: "good", "excellent", "fair" and "poor". The spread of the data value for those who responded "Fair" increased from 2006 to 2010. 
+
 
 # Problem 3 
 
